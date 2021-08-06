@@ -198,6 +198,12 @@
         display: none;
     }
 
+    .relay-email-address-label:placeholder-shown {
+        color: $color-grey-50;
+        opacity: 1;
+        width: 192px;
+    }
+
     .additional-notes.show-label + button {
         margin-top: 0;
     }
@@ -209,7 +215,7 @@
     input {
         text-overflow: ellipsis;
         width: inherit;
-        max-width: 100%;
+        width: 100%;
     }
 
     @media #{$mq-md} {
