@@ -38,7 +38,7 @@ class Profile(models.Model):
     )
 
     def __str__(self):
-        return '%s Profile' % self.user
+        return f'{self.user} Profile'
 
     @property
     def num_active_address(self):
@@ -83,11 +83,7 @@ class Profile(models.Model):
 
     @property
     def last_bounce_date(self):
-        if self.last_hard_bounce:
-            return self.last_hard_bounce
-        if self.last_soft_bounce:
-            return self.last_soft_bounce
-        return None
+        return self.last_hard_bounce or self.last_soft_bounce or None
 
     @property
     def at_max_free_aliases(self):
@@ -113,10 +109,10 @@ class Profile(models.Model):
         if not self.fxa:
             return False
         user_subscriptions = self.fxa.extra_data.get('subscriptions', [])
-        for sub in settings.SUBSCRIPTIONS_WITH_UNLIMITED.split(','):
-            if sub in user_subscriptions:
-                return True
-        return False
+        return any(
+            sub in user_subscriptions
+            for sub in settings.SUBSCRIPTIONS_WITH_UNLIMITED.split(',')
+        )
 
     @property
     def emails_forwarded(self):
@@ -220,18 +216,15 @@ class RelayAddress(models.Model):
         profile.save()
         return super(RelayAddress, self).delete(*args, **kwargs)
 
-    def make_relay_address(user_profile, num_tries=0):
-        if (
-            user_profile.at_max_free_aliases
-            and not user_profile.has_unlimited
-        ):
+    def make_relay_address(self, num_tries=0):
+        if self.at_max_free_aliases and not self.has_unlimited:
             hit_limit = f'make more than {settings.MAX_NUM_FREE_ALIASES} aliases'
             raise CannotMakeAddressException(
                 NOT_PREMIUM_USER_ERR_MSG.format(hit_limit)
             )
         if num_tries >= 5:
             raise CannotMakeAddressException
-        relay_address = RelayAddress.objects.create(user=user_profile.user)
+        relay_address = RelayAddress.objects.create(user=self.user)
         address_contains_badword = has_bad_words(relay_address.address)
         address_already_deleted = DeletedAddress.objects.filter(
             address_hash=address_hash(relay_address.address)
@@ -239,7 +232,7 @@ class RelayAddress(models.Model):
         if address_already_deleted > 0 or address_contains_badword:
             relay_address.delete()
             num_tries += 1
-            return RelayAddress.make_relay_address(user_profile, num_tries)
+            return RelayAddress.make_relay_address(self, num_tries)
         return relay_address
 
 
@@ -274,13 +267,13 @@ class DomainAddress(models.Model):
     def user_profile(self):
         return Profile.objects.get(user=self.user)
 
-    def make_domain_address(user_profile, address=None, made_via_email=False):
-        if not user_profile.has_unlimited:
+    def make_domain_address(self, address=None, made_via_email=False):
+        if not self.has_unlimited:
             raise CannotMakeAddressException(
                 NOT_PREMIUM_USER_ERR_MSG.format('create subdomain aliases')
             )
 
-        user_subdomain = Profile.objects.get(user=user_profile.user).subdomain
+        user_subdomain = Profile.objects.get(user=self.user).subdomain
         if not user_subdomain:
             raise CannotMakeAddressException(
                 'You must select a subdomain before creating email address with subdomain.'
@@ -303,7 +296,7 @@ class DomainAddress(models.Model):
                 TRY_DIFFERENT_VALUE_ERR_MSG.format('Email address with subdomain')
             )
 
-        domain_address = DomainAddress.objects.create(user=user_profile.user, address=address)
+        domain_address = DomainAddress.objects.create(user=self.user, address=address)
         if made_via_email:
             # update first_emailed_at indicating alias generation impromptu.
             domain_address.first_emailed_at = datetime.now(timezone.utc)

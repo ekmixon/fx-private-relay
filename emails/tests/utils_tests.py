@@ -23,9 +23,10 @@ class FormattingToolsTest(TestCase):
         expected_encoded_display_name = (
             '=?utf-8?b?IiJmb8O2IGLDpHIiIDxmb29AYmFyLmNvbT4gW3ZpYSBSZWxheV0i?='
         )
-        expected_formatted_from = '%s %s' % (
-            expected_encoded_display_name, '<%s>' % self.relay_from
+        expected_formatted_from = (
+            f'{expected_encoded_display_name} <{self.relay_from}>'
         )
+
         assert formatted_from_address == expected_formatted_from
 
     def test_generate_relay_From_with_realistic_address(self):
@@ -36,21 +37,24 @@ class FormattingToolsTest(TestCase):
             '=?utf-8?q?=22something_real_=3Csomethingreal=40protonmail=2Ecom'
             '=3E_=5Bvia_Relay=5D=22?='
         )
-        expected_formatted_from = '%s %s' % (
-            expected_encoded_display_name, '<%s>' % self.relay_from
+        expected_formatted_from = (
+            f'{expected_encoded_display_name} <{self.relay_from}>'
         )
+
         assert formatted_from_address == expected_formatted_from
 
     def test_generate_relay_From_with_rfc_2822_invalid_address(self):
-        original_from_address = 'l%sng <long@long.com>' % ('o'*999)
+        original_from_address = f"l{'o' * 999}ng <long@long.com>"
         formatted_from_address = generate_relay_From(original_from_address)
 
         expected_encoded_display_name = (
-            '=?utf-8?q?=22l%s_=2E=2E=2E_=5Bvia_Relay=5D=22?=' % ('o'*899)
+            f"=?utf-8?q?=22l{'o' * 899}_=2E=2E=2E_=5Bvia_Relay=5D=22?="
         )
-        expected_formatted_from = '%s %s' % (
-            expected_encoded_display_name, '<%s>' % self.relay_from
+
+        expected_formatted_from = (
+            f'{expected_encoded_display_name} <{self.relay_from}>'
         )
+
         assert formatted_from_address == expected_formatted_from
 
     def test_generate_relay_From_with_linebreak_chars(self):
@@ -61,9 +65,10 @@ class FormattingToolsTest(TestCase):
             '=?utf-8?b?IiJUZXJ5ICBjdCIgPGluZm9AYS4uLnQub3JnPiBbdmlhIFJlbGF5XSI'
             '=?='
         )
-        expected_formatted_from = '%s %s' % (
-            expected_encoded_display_name, '<%s>' % self.relay_from
+        expected_formatted_from = (
+            f'{expected_encoded_display_name} <{self.relay_from}>'
         )
+
         assert formatted_from_address == expected_formatted_from
 
     @override_settings(ON_HEROKU=True, SITE_ORIGIN='https://test.com')

@@ -29,8 +29,7 @@ class EmailsConfig(AppConfig):
             settings.BASE_DIR, 'emails', 'badwords.txt'
         )
         with open(badwords_file_path, 'r') as badwords_file:
-            for word in badwords_file:
-                badwords.append(word.strip())
+            badwords.extend(word.strip() for word in badwords_file)
         self.badwords = badwords
 
     def ready(self):

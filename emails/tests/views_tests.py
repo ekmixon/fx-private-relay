@@ -23,10 +23,7 @@ from emails.views import _get_address
 
 
 def _get_bounce_payload(bounce_type):
-    f_path = (
-        'emails/tests/fixtures/relay-bounce-%s-notification.json' %
-        bounce_type
-    )
+    f_path = f'emails/tests/fixtures/relay-bounce-{bounce_type}-notification.json'
     with open(os.path.join(settings.BASE_DIR, f_path), 'r') as f:
         return json.load(f)
 

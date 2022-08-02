@@ -68,9 +68,9 @@ def main_twilio_webhook(request):
     pretty_from = format_number(parse(from_num), PhoneNumberFormat.NATIONAL)
     pretty_proxy = format_number(parse(proxy_num), PhoneNumberFormat.NATIONAL)
     resp.message(
-        '%s will forward to this number for %s minutes' %
-        (pretty_proxy, ttl_minutes)
+        f'{pretty_proxy} will forward to this number for {ttl_minutes} minutes'
     )
+
     return HttpResponse(resp)
 
 
@@ -109,8 +109,8 @@ def twilio_proxy_out_of_session(request):
 
     twilio_session = service.sessions(db_session.twilio_sid).fetch()
     if (twilio_session.status in ['closed', 'failed', 'unknown']):
-        error_message = ('Twilio session %s status: %s' %
-                         (db_session.twilio_sid, twilio_session.status))
+        error_message = f'Twilio session {db_session.twilio_sid} status: {twilio_session.status}'
+
         print(error_message)
         return HttpResponseNotFound(error_message)
 
@@ -152,10 +152,7 @@ def _delete_expired_sessions():
 
 def _get_available_numbers():
     numbers = service.phone_numbers.list()
-    available_numbers = [
-        number.phone_number for number in numbers if number.in_use == 0
-    ]
-    return available_numbers
+    return [number.phone_number for number in numbers if number.in_use == 0]
 
 
 def _get_session_and_participant_with_available_number(

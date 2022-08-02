@@ -69,9 +69,11 @@ def index(request):
 
 
 def _get_user_profile(request, api_token):
-    if not request.user.is_authenticated:
-        return Profile.objects.get(api_token=api_token)
-    return request.user.profile_set.first()
+    return (
+        request.user.profile_set.first()
+        if request.user.is_authenticated
+        else Profile.objects.get(api_token=api_token)
+    )
 
 
 def _index_POST(request):
@@ -109,9 +111,8 @@ def _index_POST(request):
             return redirect('profile')
 
     if settings.SITE_ORIGIN not in request.headers.get('Origin', ''):
-        address_string = '%s@%s' % (
-            relay_address.address, relay_from_domain(request)['RELAY_DOMAIN']
-        )
+        address_string = f"{relay_address.address}@{relay_from_domain(request)['RELAY_DOMAIN']}"
+
         return JsonResponse({
             'id': relay_address.id,
             'address': address_string
@@ -122,16 +123,13 @@ def _index_POST(request):
 
 def _get_address_from_id(request_data, user_profile):
     if request_data.get('relay_address_id', False):
-        relay_address = RelayAddress.objects.get(
-            id=request_data['relay_address_id'],
-            user=user_profile.user
+        return RelayAddress.objects.get(
+            id=request_data['relay_address_id'], user=user_profile.user
         )
-        return relay_address
-    domain_address = DomainAddress.objects.get(
-        id=request_data['domain_address_id'],
-        user=user_profile.user
+
+    return DomainAddress.objects.get(
+        id=request_data['domain_address_id'], user=user_profile.user
     )
-    return domain_address
 
 
 def _index_PUT(request_data, user_profile):
@@ -206,8 +204,8 @@ def validate_sns_header(topic_arn, message_type):
             }
         )
         return HttpResponse(
-            'Received SNS message for unsupported Type: %s' % message_type,
-            status=400
+            f'Received SNS message for unsupported Type: {message_type}',
+            status=400,
         )
 
 
@@ -247,10 +245,10 @@ def _sns_notification(json_body):
             extra={'notification_type': notification_type},
         )
         return HttpResponse(
-            'Received SNS notification for unsupported Type: %s' %
-            notification_type,
-            status=400
+            f'Received SNS notification for unsupported Type: {notification_type}',
+            status=400,
         )
+
 
     return _sns_message(message_json)
 
@@ -297,7 +295,7 @@ def _sns_message(message_json):
     # first see if this user is over bounce limits
     bounce_paused, bounce_type = user_profile.check_bounce_pause()
     if bounce_paused:
-        incr_if_enabled('email_suppressed_for_%s_bounce' % bounce_type, 1)
+        incr_if_enabled(f'email_suppressed_for_{bounce_type}_bounce', 1)
         return HttpResponse("Address is temporarily disabled.")
 
     if address and not address.enabled:
@@ -326,8 +324,7 @@ def _sns_message(message_json):
     )
     strip_texts = []
     for item in mail['headers']:
-        for k, v in item.items():
-            strip_texts.append(': '.join([k, v]))
+        strip_texts.extend(': '.join([k, v]) for k, v in item.items())
     stripped_content = message_json['content']
     for item in strip_texts:
         stripped_content = stripped_content.replace(item, '')
@@ -402,13 +399,12 @@ def _get_address(to_address, local_portion, domain_portion):
     # if the domain is not the site's 'top' relay domain,
     # it may be for a user's subdomain
     email_domain = get_email_domain_from_settings()
-    if not domain_portion == email_domain:
+    if domain_portion != email_domain:
         return _get_domain_address(to_address, local_portion, domain_portion)
 
     # the domain is the site's 'top' relay domain, so look up the RelayAddress
     try:
-        relay_address = RelayAddress.objects.get(address=local_portion)
-        return relay_address
+        return RelayAddress.objects.get(address=local_portion)
     except RelayAddress.DoesNotExist:
         try:
             DeletedAddress.objects.get(
@@ -443,11 +439,10 @@ def _handle_bounce(message_json):
             return HttpResponse("Address does not exist", status=404)
         now = datetime.now(timezone.utc)
         incr_if_enabled(
-            'email_bounce_%s_%s' % (
-                bounce.get('bounceType'), bounce.get('bounceSubType')
-            ),
-            1
+            f"email_bounce_{bounce.get('bounceType')}_{bounce.get('bounceSubType')}",
+            1,
         )
+
         if bounce.get('bounceType') == 'Permanent':
             profile.last_hard_bounce = now
         if bounce.get('bounceType') == 'Transient':
@@ -464,10 +459,7 @@ def _get_attachment(part):
     ct = part.get_content_type()
     payload = part.get_payload(decode=True)
     payload_size = len(payload)
-    if fn:
-        extension = os.path.splitext(fn)[1]
-    else:
-        extension = mimetypes.guess_extension(ct)
+    extension = os.path.splitext(fn)[1] if fn else mimetypes.guess_extension(ct)
     tag_type = 'attachment'
     attachment_extension_tag = generate_tag(tag_type, extension)
     attachment_content_type_tag = generate_tag(tag_type, ct)

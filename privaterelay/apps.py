@@ -15,9 +15,9 @@ class PrivateRelayConfig(AppConfig):
 
     def ready(self):
         resp = requests.get(
-            '%s/jwks' %
-            settings.SOCIALACCOUNT_PROVIDERS['fxa']['OAUTH_ENDPOINT']
+            f"{settings.SOCIALACCOUNT_PROVIDERS['fxa']['OAUTH_ENDPOINT']}/jwks"
         )
+
         if resp.status_code == 200:
             resp_json = resp.json()
             self.fxa_verifying_keys = resp_json['keys']

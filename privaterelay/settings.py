@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.2/ref/settings/
 """
 
+
 import ipaddress
 import os
 
@@ -82,11 +83,9 @@ CSP_IMG_SRC = ["'self'"] + AVATAR_IMG_SRC
 REFERRER_POLICY = 'strict-origin-when-cross-origin'
 
 ALLOWED_HOSTS = []
-DJANGO_ALLOWED_HOST = config('DJANGO_ALLOWED_HOST', None)
-if DJANGO_ALLOWED_HOST:
+if DJANGO_ALLOWED_HOST := config('DJANGO_ALLOWED_HOST', None):
     ALLOWED_HOSTS += DJANGO_ALLOWED_HOST.split(',')
-DJANGO_ALLOWED_SUBNET = config('DJANGO_ALLOWED_SUBNET', None)
-if DJANGO_ALLOWED_SUBNET:
+if DJANGO_ALLOWED_SUBNET := config('DJANGO_ALLOWED_SUBNET', None):
     ALLOWED_HOSTS += [
         str(ip) for ip in ipaddress.IPv4Network(DJANGO_ALLOWED_SUBNET)
     ]
@@ -175,11 +174,13 @@ def download_xpis(headers, path, url):
 WHITENOISE_ADD_HEADERS_FUNCTION = download_xpis
 
 def _get_initial_middleware():
-    if STATSD_ENABLED:
-        return [
+    return (
+        [
             'privaterelay.middleware.ResponseMetrics',
         ]
-    return []
+        if STATSD_ENABLED
+        else []
+    )
 
 MIDDLEWARE = _get_initial_middleware()
 
@@ -250,12 +251,12 @@ WSGI_APPLICATION = 'privaterelay.wsgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
-        default="sqlite:///%s" % os.path.join(BASE_DIR, 'db.sqlite3')
+        default=f"sqlite:///{os.path.join(BASE_DIR, 'db.sqlite3')}"
     )
 }
 
-REDIS_CACHE_URL = config('REDIS_CACHE_URL', '', cast=str)
-if REDIS_CACHE_URL:
+
+if REDIS_CACHE_URL := config('REDIS_CACHE_URL', '', cast=str):
     CACHES = {
         "default": {
             "BACKEND": "django_redis.cache.RedisCache",

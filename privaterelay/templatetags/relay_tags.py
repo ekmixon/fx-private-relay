@@ -14,4 +14,4 @@ def remaining_free_aliases(aliases):
 @register.simple_tag
 def user_email_domain(user_profile):
     mail_domain = get_email_domain_from_settings()
-    return "%s.%s" % (user_profile.subdomain, mail_domain)
+    return f"{user_profile.subdomain}.{mail_domain}"

@@ -195,7 +195,7 @@ def generate_relay_From(original_from_address):
     # So, truncate the original sender to 900 chars so we can add our
     # "[via Relay] <relayfrom>" and encode it all.
     if len(original_from_address) > 998:
-        original_from_address = '%s ...' % original_from_address[:900]
+        original_from_address = f'{original_from_address[:900]} ...'
     # line breaks in From: will encode to unsafe chars, so strip them.
     original_from_address = (
         original_from_address
@@ -207,9 +207,8 @@ def generate_relay_From(original_from_address):
     display_name = Header(
         '"%s [via Relay]"' % (original_from_address), 'UTF-8'
     )
-    formatted_from_address = str(
+    return str(
         Address(
             display_name.encode(maxlinelen=998), addr_spec=relay_from_address
         )
     )
-    return formatted_from_address

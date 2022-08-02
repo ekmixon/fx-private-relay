@@ -68,7 +68,7 @@ class RelayAddressTest(TestCase):
         assert relay_address.user == self.user_profile.user
 
     def test_make_relay_address_makes_different_addresses(self):
-        for i in range(1000):
+        for _ in range(1000):
             RelayAddress.make_relay_address(self.premium_user_profile)
         # check that the address is unique (deeper assertion that the generated aliases are unique)
         relay_addresses = RelayAddress.objects.filter(
@@ -77,7 +77,7 @@ class RelayAddressTest(TestCase):
         assert len(set(relay_addresses)) == 1000
 
     def test_make_relay_address_premium_user_can_exceed_limit(self):
-        for i in range(settings.MAX_NUM_FREE_ALIASES + 1):
+        for _ in range(settings.MAX_NUM_FREE_ALIASES + 1):
             RelayAddress.make_relay_address(self.premium_user_profile)
         relay_addresses = RelayAddress.objects.filter(
             user=self.premium_user
@@ -86,7 +86,7 @@ class RelayAddressTest(TestCase):
 
     def test_make_relay_address_non_premium_user_cannot_pass_limit(self):
         try:
-            for i in range(settings.MAX_NUM_FREE_ALIASES + 1):
+            for _ in range(settings.MAX_NUM_FREE_ALIASES + 1):
                 RelayAddress.make_relay_address(self.user_profile)
         except CannotMakeAddressException as e:
             assert e.message == NOT_PREMIUM_USER_ERR_MSG.format(
@@ -184,7 +184,7 @@ class ProfileTest(TestCase):
 
         assert bounce_paused == False
         assert bounce_type == ''
-        assert self.profile.last_hard_bounce == None
+        assert self.profile.last_hard_bounce is None
 
     def test_bounce_paused_soft_bounce_over_resets_timer(self):
         self.profile.last_soft_bounce = (
@@ -199,7 +199,7 @@ class ProfileTest(TestCase):
 
         assert bounce_paused == False
         assert bounce_type == ''
-        assert self.profile.last_soft_bounce == None
+        assert self.profile.last_soft_bounce is None
 
     def test_next_email_try_no_bounces_returns_today(self):
         assert (
@@ -258,7 +258,7 @@ class ProfileTest(TestCase):
         )
 
     def test_last_bounce_date_no_bounces_returns_None(self):
-        assert self.profile.last_bounce_date == None
+        assert self.profile.last_bounce_date is None
 
     def test_last_bounce_date_soft_bounce_returns_its_date(self):
         last_soft_bounce = (
@@ -398,7 +398,7 @@ class ProfileTest(TestCase):
             extra_data={}
         )
         profile = Profile.objects.get(user=social_account.user)
-        assert profile.display_name == None
+        assert profile.display_name is None
         
 
 
@@ -434,8 +434,9 @@ class DomainAddressTest(TestCase):
         # not been fixed yet
         for i in range(5):
             domain_address = DomainAddress.make_domain_address(
-                self.user_profile, 'test-different-%s' % i
+                self.user_profile, f'test-different-{i}'
             )
+
             assert domain_address.first_emailed_at is None
         domain_addresses = DomainAddress.objects.filter(
             user=self.user

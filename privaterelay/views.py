@@ -91,11 +91,12 @@ def profile(request):
 
     bounce_status = profile.check_bounce_pause()
     if bounce_status.paused:
-        context.update({
+        context |= {
             'last_bounce_type': bounce_status.type,
             'last_bounce_date': profile.last_bounce_date,
-            'next_email_try': profile.next_email_try
-        })
+            'next_email_try': profile.next_email_try,
+        }
+
     return render(request, 'profile.html', context)
 
 
@@ -211,8 +212,8 @@ def _authenticate_fxa_jwt(req_jwt):
         # FXA key may be old? re-fetch FXA keys and try again
         private_relay_config.ready()
         authentic_jwt = _verify_jwt_with_fxa_key(req_jwt, private_relay_config)
-        if not authentic_jwt:
-            raise Exception("Could not authenticate JWT with FXA key.")
+    if not authentic_jwt:
+        raise Exception("Could not authenticate JWT with FXA key.")
 
     return authentic_jwt
 
